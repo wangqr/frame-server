@@ -411,7 +411,8 @@ DWORD WINAPI UpdateCheckThreadProc(LPVOID param) {
   if (!connected) {
     // Process an empty response so that the next update time is calculated properly and we don't
     // keep connecting to the server on each run.
-    HandleUpdateResponse("");
+    char empty[] = "";
+    HandleUpdateResponse(empty);
   }
 
   CloseHandle(updateCheckThreadHandle);

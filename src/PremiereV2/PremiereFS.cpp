@@ -50,13 +50,7 @@ void* operator new(size_t cbSize, void* pv) {
 void operator delete(void*, void*) {  // dummy method to turn off warnings.
 }
 
-void debug(wchar_t* prefix, int value) {
-  wchar_t msg[512];
-
-  lstrcpy(msg, prefix);
-  _itow_s(value, msg + lstrlen(prefix), 10, 10);
-  OutputDebugString(msg);
-}
+void debug(const wchar_t* prefix, int value) {}
 
 class PremiereFSImpl : public FrameServerImpl {
 public:
@@ -171,7 +165,7 @@ prMALError PremiereFSImpl::postProcessParams(exPostProcessParamsRec* rec) {
   exportParam->SetParamName(pluginId, 0, ADBEAudioRatePerSecond, L"Sample Rate");
   exportParam->ClearConstrainedValues(pluginId, 0, ADBEAudioRatePerSecond);
   float sampleRates[] = { 16000.0f, 32000.0f, 44100.0f, 48000.0f };
-  wchar_t* sampleRateStrings[] = { L"16000 Hz", L"32000 Hz", L"44100 Hz", L"48000 Hz" };
+  const wchar_t* sampleRateStrings[] = { L"16000 Hz", L"32000 Hz", L"44100 Hz", L"48000 Hz" };
   for (int i = 0; i < sizeof(sampleRates) / sizeof(float); i++) {
     exOneParamValueRec value;
     value.floatValue = sampleRates[i];
@@ -265,7 +259,8 @@ prMALError PremiereFSImpl::serve(exDoExportRec* rec) {
   audioFloatData[1] = reinterpret_cast<float*>(memorySuite->NewPtr(sizeof(float) * samplingRate));
 
   ReturnIfError(renderSuite->MakeVideoRenderer(pluginId, &videoRenderId, ticksPerFrame));
-  ReturnIfError(audioSuite->MakeAudioRenderer(pluginId, rec->startTime, kPrAudioChannelType_Stereo,
+  PrAudioChannelLabel channel_labels[] = { kPrAudioChannelLabel_FrontLeft, kPrAudioChannelLabel_FrontRight };
+  ReturnIfError(audioSuite->MakeAudioRenderer(pluginId, rec->startTime, kPrAudioChannelType_Stereo, channel_labels,
           kPrAudioSampleType_32BitFloat, static_cast<float>(samplingRate), &audioRenderId));
 
   bool doAudio = (rec->exportAudio != 0);
@@ -467,7 +462,7 @@ prMALError doEndInstance(exportStdParms* stdParams, exExporterInstanceRec* rec) 
   return malNoError;
 }
 
-extern "C" DllExport PREMPLUGENTRY xSDKExport(int selector, exportStdParms* stdParams, long param1, long param2) {
+extern "C" DllExport PREMPLUGENTRY xSDKExport(csSDK_int32 selector, exportStdParms* stdParams, void *param1, void *param2) {
   prMALError result = exportReturn_Unsupported;
 
   debug(L"sel=", selector);
