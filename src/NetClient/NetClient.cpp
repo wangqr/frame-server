@@ -29,7 +29,7 @@
 
 char networkServer[MAX_PATH];
 DWORD networkPort = 8278;
-char signpostPath[MAX_PATH * 2];
+wchar_t signpostPath[MAX_PATH * 2];
 SOCKET sock;
 HINSTANCE ghInst, ghResInst;
 DfscData* vars = NULL;
@@ -38,19 +38,19 @@ HANDLE videoEncEvent, videoDecEvent;
 HANDLE audioEncEvent, audioDecEvent;
 BOOL stopServing = FALSE;
 HWND servingdlg;
-char installDir[MAX_PATH] = "C:\\Program Files\\Debugmode\\Frameserver";
-#define APPNAME "Debugmode FrameServer"
+wchar_t installDir[MAX_PATH] = L"C:\\Program Files\\Debugmode\\Frameserver";
+#define APPNAME L"Debugmode FrameServer"
 
 // ------------------------------- copied from fscommon.cpp ----------------------------------
 
 bool LoadCommonResource() {
   HKEY key;
 
-  RegCreateKeyEx(HKEY_LOCAL_MACHINE, "Software\\DebugMode\\FrameServer", 0, 0,
+  RegCreateKeyEx(HKEY_LOCAL_MACHINE, L"Software\\DebugMode\\FrameServer", 0, 0,
       REG_OPTION_NON_VOLATILE, KEY_READ, 0, &key, 0);
   if (key) {
     DWORD size = sizeof(installDir);
-    RegQueryValueEx(key, "InstallDir", 0, 0, (LPBYTE)installDir, &size);
+    RegQueryValueEx(key, L"InstallDir", 0, 0, (LPBYTE)installDir, &size);
     installDir[size] = 0;
   }
   TCHAR libpath[MAX_PATH];
@@ -58,7 +58,7 @@ bool LoadCommonResource() {
   _tcscat(libpath, _T("\\fscommon.dll"));
   ghResInst = LoadLibrary(libpath);
   if (!ghResInst) {
-    MessageBox(NULL, "Unable to load \"fscommon.dll\". Please reinstall.", APPNAME, MB_OK | MB_ICONEXCLAMATION);
+    MessageBox(NULL, L"Unable to load \"fscommon.dll\". Please reinstall.", APPNAME, MB_OK | MB_ICONEXCLAMATION);
     return false;
   }
   return true;
@@ -69,7 +69,7 @@ void SetFsIconForWindow(HWND wnd) {
   SendMessage(wnd, WM_SETICON, FALSE, (LPARAM)LoadIcon(ghResInst, MAKEINTRESOURCE(IDI_FRAMESERVER)));
 }
 
-BOOL CALLBACK WritingSignpostDlgProc(HWND dlg, UINT msg, WPARAM wp, LPARAM lp) {
+INT_PTR CALLBACK WritingSignpostDlgProc(HWND dlg, UINT msg, WPARAM wp, LPARAM lp) {
   switch (msg) {
   case WM_INITDIALOG:
     SetFsIconForWindow(dlg);
@@ -83,8 +83,8 @@ BOOL CALLBACK WritingSignpostDlgProc(HWND dlg, UINT msg, WPARAM wp, LPARAM lp) {
   return FALSE;
 }
 
-BOOL CALLBACK AboutDlgProc(HWND dlg, UINT msg, WPARAM wp, LPARAM lp) {
-  char copyright[1024];
+INT_PTR CALLBACK AboutDlgProc(HWND dlg, UINT msg, WPARAM wp, LPARAM lp) {
+  wchar_t copyright[1024];
 
   switch (msg) {
   case WM_INITDIALOG: LoadString(ghResInst, IDS_ABOUTDLG_COPYRIGHT, copyright, 1024);
@@ -145,7 +145,7 @@ void SendReadAudioFrameIndex(SOCKET s, BOOL readAudio, DWORD frameIndex) {
   send(s, (const char*)varbuf, totsize, 0);
 }
 
-BOOL CALLBACK NetClientOptionsDlgProc(HWND dlg, UINT msg, WPARAM wp, LPARAM lp) {
+INT_PTR CALLBACK NetClientOptionsDlgProc(HWND dlg, UINT msg, WPARAM wp, LPARAM lp) {
   HKEY key = 0;
 
   switch (msg) {
@@ -156,19 +156,19 @@ BOOL CALLBACK NetClientOptionsDlgProc(HWND dlg, UINT msg, WPARAM wp, LPARAM lp) 
     strcpy(networkServer, "127.0.0.1");
     signpostPath[0] = 0;
     SHGetSpecialFolderPath(NULL, signpostPath, CSIDL_DESKTOPDIRECTORY, FALSE);
-    strcat(signpostPath, "\\netserved.avi");
-    RegCreateKeyEx(HKEY_CURRENT_USER, "Software\\DebugMode\\FrameServer", 0, 0,
+    wcscat(signpostPath, L"\\netserved.avi");
+    RegCreateKeyEx(HKEY_CURRENT_USER, L"Software\\DebugMode\\FrameServer", 0, 0,
         REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS, 0, &key, 0);
     if (key) {
       DWORD size = sizeof(networkServer);
-      RegQueryValueEx(key, "networkServer", 0, 0, (LPBYTE)&networkServer, &size);
+      RegQueryValueEx(key, L"networkServer", 0, 0, (LPBYTE)&networkServer, &size);
       size = sizeof(networkPort);
-      RegQueryValueEx(key, "networkPort", 0, 0, (LPBYTE)&networkPort, &size);
+      RegQueryValueEx(key, L"networkPort", 0, 0, (LPBYTE)&networkPort, &size);
       size = sizeof(signpostPath);
-      RegQueryValueEx(key, "signpostPath", 0, 0, (LPBYTE)&signpostPath, &size);
+      RegQueryValueEx(key, L"signpostPath", 0, 0, (LPBYTE)&signpostPath, &size);
       RegCloseKey(key);
     }
-    SetDlgItemText(dlg, IDC_EDIT1, networkServer);
+    SetDlgItemTextA(dlg, IDC_EDIT1, networkServer);
     SetDlgItemInt(dlg, IDC_EDIT2, networkPort, FALSE);
     SetDlgItemText(dlg, IDC_EDIT3, signpostPath);
     return TRUE;
@@ -178,9 +178,9 @@ BOOL CALLBACK NetClientOptionsDlgProc(HWND dlg, UINT msg, WPARAM wp, LPARAM lp) 
       memset(&ofn, 0, sizeof(ofn));
       ofn.lStructSize = sizeof(ofn);
       ofn.hwndOwner = dlg;
-      char filter[] = "AVI Files (*.avi)|*.avi|All Files (*.*)|*.*||";
+      wchar_t filter[] = L"AVI Files (*.avi)|*.avi|All Files (*.*)|*.*||";
       filter[17] = filter[23] = filter[39] = filter[43] = filter[44] = 0;
-      ofn.lpstrFilter = (const char*)filter;
+      ofn.lpstrFilter = filter;
       ofn.lpstrFile = signpostPath;
       ofn.nMaxFile = sizeof(signpostPath) / sizeof(signpostPath[0]);
       ofn.Flags = OFN_EXPLORER | OFN_OVERWRITEPROMPT;
@@ -189,7 +189,7 @@ BOOL CALLBACK NetClientOptionsDlgProc(HWND dlg, UINT msg, WPARAM wp, LPARAM lp) 
     }
     if (LOWORD(wp) == IDOK) {
       GetDlgItemText(dlg, IDC_EDIT3, signpostPath, sizeof(signpostPath));
-      GetDlgItemText(dlg, IDC_EDIT1, networkServer, sizeof(networkServer));
+      GetDlgItemTextA(dlg, IDC_EDIT1, networkServer, sizeof(networkServer));
       networkPort = GetDlgItemInt(dlg, IDC_EDIT2, NULL, FALSE);
       sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
       if (sock) {
@@ -204,9 +204,9 @@ BOOL CALLBACK NetClientOptionsDlgProc(HWND dlg, UINT msg, WPARAM wp, LPARAM lp) 
             addr.sin_addr.S_un.S_addr = *(DWORD*)(hostEnt->h_addr);
         }
         if (connect(sock, (const struct sockaddr*)&addr, sizeof(addr)) != 0) {
-          MessageBox(dlg, "Unable to connect to source machine.\n\n"
-              "Please check the source machine's address and port.\n"
-              "Also check if the source machine has the FrameServer running.", APPNAME, MB_OK);
+          MessageBox(dlg, L"Unable to connect to source machine.\n\n"
+              L"Please check the source machine's address and port.\n"
+              L"Also check if the source machine has the FrameServer running.", APPNAME, MB_OK);
           closesocket(sock);
           sock = NULL;
         } else {
@@ -221,7 +221,7 @@ BOOL CALLBACK NetClientOptionsDlgProc(HWND dlg, UINT msg, WPARAM wp, LPARAM lp) 
             DWORD size = 0;
             if (SocketReadBlock(sock, &size, sizeof(size)) != sizeof(size)) break;
             varFile = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0,
-                sizeof(DfscData) + size, "DfscNetData");
+                sizeof(DfscData) + size, L"DfscNetData");
             if (varFile) {
               if (GetLastError() == ERROR_ALREADY_EXISTS) {
                 CloseHandle(varFile);
@@ -241,7 +241,8 @@ BOOL CALLBACK NetClientOptionsDlgProc(HWND dlg, UINT msg, WPARAM wp, LPARAM lp) 
             SendMessage(GetDlgItem(progdlg, IDC_PROGRESS1), PBM_SETRANGE32, 0, size);
             SendMessage(GetDlgItem(progdlg, IDC_PROGRESS1), PBM_SETPOS, 0, 0);
             ShowWindow(progdlg, SW_SHOW);
-            for (DWORD i = 0; i < size && !stopServing;) {
+			DWORD i;
+            for (i = 0; i < size && !stopServing;) {
               DWORD cursize = min(size - i, 32768);
               if (SocketReadBlock(sock, fileData, cursize) != (int)cursize) break;
               DWORD written = 0;
@@ -262,7 +263,7 @@ BOOL CALLBACK NetClientOptionsDlgProc(HWND dlg, UINT msg, WPARAM wp, LPARAM lp) 
           } while (0);
           if (!success) {
             if (!stopServing) {
-              MessageBox(dlg, "Initialization error!\n\n"
+              MessageBox(dlg, L"Initialization error!\n\n"
                   "1) Check the source machine's address and port.\n"
                   "2) Close and reopen all applications that were using the frameserved AVI earlier.\n"
                   "3) Also check if the signpost path specified is valid.", APPNAME, MB_OK);
@@ -284,15 +285,15 @@ BOOL CALLBACK NetClientOptionsDlgProc(HWND dlg, UINT msg, WPARAM wp, LPARAM lp) 
         }
       }
       if (sock) {
-        RegCreateKeyEx(HKEY_CURRENT_USER, "Software\\DebugMode\\FrameServer", 0, 0, REG_OPTION_NON_VOLATILE,
+        RegCreateKeyEx(HKEY_CURRENT_USER, L"Software\\DebugMode\\FrameServer", 0, 0, REG_OPTION_NON_VOLATILE,
             KEY_ALL_ACCESS, 0, &key, 0);
         if (key) {
           DWORD size = sizeof(networkServer);
-          RegSetValueEx(key, "networkServer", 0, REG_BINARY, (LPBYTE)&networkServer, size);
+          RegSetValueEx(key, L"networkServer", 0, REG_BINARY, (LPBYTE)&networkServer, size);
           size = sizeof(networkPort);
-          RegSetValueEx(key, "networkPort", 0, REG_BINARY, (LPBYTE)&networkPort, size);
+          RegSetValueEx(key, L"networkPort", 0, REG_BINARY, (LPBYTE)&networkPort, size);
           size = sizeof(signpostPath);
-          RegSetValueEx(key, "signpostPath", 0, REG_BINARY, (LPBYTE)&signpostPath, size);
+          RegSetValueEx(key, L"signpostPath", 0, REG_BINARY, (LPBYTE)&signpostPath, size);
           RegCloseKey(key);
         }
         EndDialog(dlg, LOWORD(wp));
@@ -305,7 +306,7 @@ BOOL CALLBACK NetClientOptionsDlgProc(HWND dlg, UINT msg, WPARAM wp, LPARAM lp) 
   return FALSE;
 }
 
-BOOL CALLBACK NetClientServingDlgProc(HWND dlg, UINT msg, WPARAM wp, LPARAM lp) {
+INT_PTR CALLBACK NetClientServingDlgProc(HWND dlg, UINT msg, WPARAM wp, LPARAM lp) {
   switch (msg) {
   case WM_INITDIALOG:
     SetFsIconForWindow(dlg);
@@ -330,7 +331,7 @@ int APIENTRY WinMain(HINSTANCE hInstance,
   WSADATA wsaData;
   wVersionRequested = MAKEWORD(1, 1);
   if (WSAStartup(wVersionRequested, &wsaData) != 0) {
-    MessageBox(NULL, "Unable to initialize network. Please check if you have latest network drivers.", APPNAME, MB_OK);
+    MessageBox(NULL, L"Unable to initialize network. Please check if you have latest network drivers.", APPNAME, MB_OK);
     return 0;
   }
   if (!LoadCommonResource())
@@ -345,10 +346,10 @@ int APIENTRY WinMain(HINSTANCE hInstance,
   strcpy(vars->audioEncSemName, "DfscNetAudioEncSemName");
   strcpy(vars->audioEncEventName, "DfscNetAudioEncEventName");
   strcpy(vars->audioDecEventName, "DfscNetAudioDecEventName");
-  videoEncEvent = CreateEvent(NULL, TRUE, FALSE, vars->videoEncEventName);
-  videoDecEvent = CreateEvent(NULL, FALSE, FALSE, vars->videoDecEventName);
-  audioEncEvent = CreateEvent(NULL, TRUE, FALSE, vars->audioEncEventName);
-  audioDecEvent = CreateEvent(NULL, FALSE, FALSE, vars->audioDecEventName);
+  videoEncEvent = CreateEventA(NULL, TRUE, FALSE, vars->videoEncEventName);
+  videoDecEvent = CreateEventA(NULL, FALSE, FALSE, vars->videoDecEventName);
+  audioEncEvent = CreateEventA(NULL, TRUE, FALSE, vars->audioEncEventName);
+  audioDecEvent = CreateEventA(NULL, FALSE, FALSE, vars->audioDecEventName);
   vars->encStatus = 0;
   vars->videoFrameIndex = -1;
   vars->audioFrameIndex = -1;
@@ -367,13 +368,13 @@ int APIENTRY WinMain(HINSTANCE hInstance,
   BYTE* audioBuffer = new BYTE[vars->wfx.nSamplesPerSec * vars->wfx.nBlockAlign * 2];
   DWORD audioBufferStartPos = (DWORD)-1;
   while (!stopServing) {
-    char str[64];
+    wchar_t str[64];
     DWORD curtime = timeGetTime();
     DWORD msec = curtime - lasttime;
     if (msec >= 1000) {
-      sprintf(str, "%.2lf frames/sec", ((double)framesread * 1000) / msec);
+      swprintf(str, L"%.2lf frames/sec", ((double)framesread * 1000) / msec);
       SetDlgItemText(servingdlg, IDC_VIDEOSTATS, str);
-      sprintf(str, "%.2lf samples/sec", ((double)samplesread * 1000) / msec);
+      swprintf(str, L"%.2lf samples/sec", ((double)samplesread * 1000) / msec);
       SetDlgItemText(servingdlg, IDC_AUDIOSTATS, str);
       framesread = 0;
       samplesread = 0;
@@ -430,7 +431,7 @@ int APIENTRY WinMain(HINSTANCE hInstance,
       send(sock, (const char*)&frameIndex, sizeof(frameIndex), 0);
 
       SocketReadBlock(sock, ((LPBYTE)vars) + vars->videooffset, size);
-      OutputDebugString("got\n");
+      OutputDebugString(L"got\n");
       vars->videoBytesRead = size;
       SetEvent(videoDecEvent);
 

@@ -69,11 +69,11 @@ int APIENTRY WinMain(HINSTANCE hInstance,
   ghInst = hInstance;
 
   HKEY key = 0;
-  RegCreateKeyEx(HKEY_CURRENT_USER, "Software\\DebugMode\\FrameServer", 0, 0,
+  RegCreateKeyEx(HKEY_CURRENT_USER, L"Software\\DebugMode\\FrameServer", 0, 0,
       REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS, 0, &key, 0);
   if (key) {
     DWORD size = sizeof(networkPort);
-    RegQueryValueEx(key, "networkPort", 0, 0, (LPBYTE)&networkPort, &size);
+    RegQueryValueEx(key, L"networkPort", 0, 0, (LPBYTE)&networkPort, &size);
     RegCloseKey(key);
   }
 
@@ -81,7 +81,7 @@ int APIENTRY WinMain(HINSTANCE hInstance,
   WSADATA wsaData;
   wVersionRequested = MAKEWORD(1, 1);
   if (WSAStartup(wVersionRequested, &wsaData) != 0) {
-    MessageBox(NULL, "Unable to initialize network. Please check if you have latest network drivers.",
+    MessageBox(NULL, L"Unable to initialize network. Please check if you have latest network drivers.",
         APPNAME, MB_OK);
     return -1;
   }
@@ -95,15 +95,15 @@ int APIENTRY WinMain(HINSTANCE hInstance,
   if (sockConnect == INVALID_SOCKET ||
       bind(sockConnect, (struct sockaddr*)&addr, sizeof(addr)) != 0 ||
       listen(sockConnect, SOMAXCONN) != 0) {
-    MessageBox(NULL, "Unable to create network socket. Please check network connections and see if the "
+    MessageBox(NULL, L"Unable to create network socket. Please check network connections and see if the "
         "port you specified is used by some other program.",
         APPNAME, MB_OK | MB_ICONEXCLAMATION);
     return -1;
   }
 
   DWORD stream = 0;
-  char str[64] = "DfscData";
-  ultoa(stream, str + strlen(str), 10);
+  wchar_t str[64] = L"DfscData";
+  swprintf(str + wcslen(str), L"%lu");
   varFile = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, sizeof(DfscData), str);
   if (GetLastError() != ERROR_ALREADY_EXISTS) {
     CloseHandle(varFile);
@@ -115,12 +115,12 @@ int APIENTRY WinMain(HINSTANCE hInstance,
   if (!vars)
     return -1;
   strcpy(signpostPath, vars->signpostPath);
-  videoEncSem = CreateSemaphore(NULL, 1, 1, vars->videoEncSemName);
-  videoEncEvent = CreateEvent(NULL, FALSE, FALSE, vars->videoEncEventName);
-  videoDecEvent = CreateEvent(NULL, FALSE, FALSE, vars->videoDecEventName);
-  audioEncSem = CreateSemaphore(NULL, 1, 1, vars->audioEncSemName);
-  audioEncEvent = CreateEvent(NULL, FALSE, FALSE, vars->audioEncEventName);
-  audioDecEvent = CreateEvent(NULL, FALSE, FALSE, vars->audioDecEventName);
+  videoEncSem = CreateSemaphoreA(NULL, 1, 1, vars->videoEncSemName);
+  videoEncEvent = CreateEventA(NULL, FALSE, FALSE, vars->videoEncEventName);
+  videoDecEvent = CreateEventA(NULL, FALSE, FALSE, vars->videoDecEventName);
+  audioEncSem = CreateSemaphoreA(NULL, 1, 1, vars->audioEncSemName);
+  audioEncEvent = CreateEventA(NULL, FALSE, FALSE, vars->audioEncEventName);
+  audioDecEvent = CreateEventA(NULL, FALSE, FALSE, vars->audioDecEventName);
 
   SOCKET sockClient[16];
   int numSockClient = 0;
@@ -149,7 +149,8 @@ int APIENTRY WinMain(HINSTANCE hInstance,
             fseek(fp, 0, SEEK_SET);
             send(sockClient[numSockClient], (const char*)&size, sizeof(size), 0);
             BYTE fileData[32768];
-            for (DWORD i = 0; i < size;) {
+			DWORD i;
+            for (i = 0; i < size;) {
               DWORD cursize = min(size - i, 32768);
               DWORD bytesread = 0;
               bytesread = fread(fileData, 1, cursize, fp);
@@ -226,7 +227,7 @@ int APIENTRY WinMain(HINSTANCE hInstance,
                 }
                 ReleaseSemaphore(videoEncSem, 1, NULL);
               }
-              OutputDebugString("sending\n");
+              OutputDebugString(L"sending\n");
               SendReadAudioFrameIndexAndLen(sockClient[s], readAudio, frameIndex, len);
               if (len)
                 send(sockClient[s], (const char*)ptr, len, 0);
@@ -240,7 +241,7 @@ int APIENTRY WinMain(HINSTANCE hInstance,
 #endif
           }
           if (closeconn) {
-            OutputDebugString("Connection closed\n");
+            OutputDebugString(L"Connection closed\n");
             closesocket(sockClient[s]);
             memcpy(sockClient + s, sockClient + s + 1, sizeof(sockClient[0]) * (numSockClient - s - 1));
             numSockClient--;
