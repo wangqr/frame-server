@@ -30,13 +30,14 @@ typedef unsigned long ULONG_PTR;
 #include <gdiplus.h>
 using namespace Gdiplus;
 
-#define APPNAME "Debugmode FrameServer"
+#define APPNAME L"Debugmode FrameServer"
 
 BOOL APIENTRY DllMain(HANDLE, DWORD, LPVOID) {
   return TRUE;
 }
 
-void FormatImagePath(const char* format, char* path, int num) {
+void FormatImagePath(const char* format, wchar_t* wpath, int num) {
+  char path[MAX_PATH * 2];
   strcpy(path, format);
   int numpos = strchr(path, '#') - path;
   if (numpos >= 0) {
@@ -45,20 +46,21 @@ void FormatImagePath(const char* format, char* path, int num) {
       numsize++;
     char strnum[12];
     itoa(num, strnum, 10);
-    int numzeroes = max(numsize - lstrlen(strnum), 0);
+    int numzeroes = max(numsize - strlen(strnum), 0);
     path[numpos] = 0;
     while (numzeroes-- > 0)
       strcat(path, "0");
     strcat(path, strnum);
     strcat(path, format + numpos + numsize);
   }
+  mbstowcs(wpath, path, MAX_PATH * 2);
 }
 
 extern "C"
 IMAGESEQUENCE_API bool CheckAndPreparePath(const char* pathFormat) {
   if (strlen(pathFormat) < 4 ||
       (!(pathFormat[0] == '\\' && pathFormat[1] == '\\') && !(pathFormat[1] == ':' && pathFormat[2] == '\\'))) {
-    MessageBox(NULL, "Please give the full path where images should be stored\n(relative paths are not supported).",
+    MessageBox(NULL, L"Please give the full path where images should be stored\n(relative paths are not supported).",
         APPNAME, MB_OK | MB_ICONERROR);
     return false;
   }
@@ -66,18 +68,18 @@ IMAGESEQUENCE_API bool CheckAndPreparePath(const char* pathFormat) {
   int dirend = strrchr(pathFormat, '\\') - pathFormat;
   int numstart = strchr(pathFormat, '#') - pathFormat;
   if (numstart > 0 && numstart < dirend) {
-    MessageBox(NULL, "Number placeholders ('#') are only allowed in the filename, not in the path",
+    MessageBox(NULL, L"Number placeholders ('#') are only allowed in the filename, not in the path",
         APPNAME, MB_OK | MB_ICONERROR);
     return false;
   }
 
-  char dir[MAX_PATH * 2], curdir[MAX_PATH * 2];
-  strcpy(dir, pathFormat);
+  wchar_t dir[MAX_PATH * 2], curdir[MAX_PATH * 2];
+  mbstowcs(dir, pathFormat, MAX_PATH * 2);
   dir[dirend] = 0;
 
   int i = 2;
   while ((i = strchr(pathFormat + i, '\\') - pathFormat) > 0) {
-    strcpy(curdir, pathFormat);
+    mbstowcs(curdir, pathFormat, MAX_PATH * 2);
     curdir[i] = 0;
     WIN32_FILE_ATTRIBUTE_DATA attrs;
     if (!GetFileAttributesEx(curdir, GetFileExInfoStandard, &attrs)) {
@@ -90,9 +92,9 @@ IMAGESEQUENCE_API bool CheckAndPreparePath(const char* pathFormat) {
   }
   if (i > 0) {
     // aborted in the middle
-    char msg[MAX_PATH * 2] = "Unable to create directory ";
-    strcat(msg, dir);
-    strcat(msg, "\nPlease check the permissions and try again.");
+    wchar_t msg[MAX_PATH * 2] = L"Unable to create directory ";
+    wcscat(msg, dir);
+    wcscat(msg, L"\nPlease check the permissions and try again.");
     MessageBox(NULL, msg, APPNAME, MB_OK | MB_ICONERROR);
     return false;
   }
@@ -100,7 +102,7 @@ IMAGESEQUENCE_API bool CheckAndPreparePath(const char* pathFormat) {
   FormatImagePath(pathFormat, dir, 1);
   WIN32_FILE_ATTRIBUTE_DATA attrs;
   if (GetFileAttributesEx(dir, GetFileExInfoStandard, &attrs)) {
-    if (MessageBox(NULL, "Some files exist in the target directory, continue and overwrite them?",
+    if (MessageBox(NULL, L"Some files exist in the target directory, continue and overwrite them?",
             APPNAME, MB_YESNO | MB_ICONQUESTION) != IDYES)
       return false;
   }
@@ -113,7 +115,7 @@ IMAGESEQUENCE_API void SaveImageSequence(DfscData* vars, const char* pathFormat,
   PAVIFILE aviFile = NULL;
   PAVISTREAM videoStream = NULL;
   PGETFRAME getFrame = NULL;
-  const char* errMsg = NULL;
+  const wchar_t* errMsg = NULL;
 
   GdiplusStartupInput input;   // constructor sets default members
   GdiplusStartupOutput output;
@@ -142,26 +144,26 @@ IMAGESEQUENCE_API void SaveImageSequence(DfscData* vars, const char* pathFormat,
     if (imageFormat == ImageSequenceFormatBMP)
       encoderClsid = bmpEncoderClsid;
 
-    HRESULT hr = AVIFileOpen(&aviFile, vars->signpostPath, OF_READ, NULL);
+    HRESULT hr = AVIFileOpenA(&aviFile, vars->signpostPath, OF_READ, NULL);
     if (hr == CO_E_NOTINITIALIZED) {
       // COM was not initialized by the caller. We'll try to do it for him.
       if (CoInitialize(NULL) == S_OK)
-        hr = AVIFileOpen(&aviFile, vars->signpostPath, OF_READ, NULL);
+        hr = AVIFileOpenA(&aviFile, vars->signpostPath, OF_READ, NULL);
     }
     if (hr != AVIERR_OK) {
-      errMsg = "Unable to open signpost AVI file!";
+      errMsg = L"Unable to open signpost AVI file!";
       break;
     }
 
     hr = AVIFileGetStream(aviFile, &videoStream, streamtypeVIDEO, 0);
     if (FAILED(hr)) {
-      errMsg = "Signpost AVI has no video?";
+      errMsg = L"Signpost AVI has no video?";
       break;
     }
 
     getFrame = AVIStreamGetFrameOpen(videoStream, NULL);
     if (!getFrame) {
-      errMsg = "Unable to read video from signpost AVI";
+      errMsg = L"Unable to read video from signpost AVI";
       break;
     }
 
@@ -176,7 +178,7 @@ IMAGESEQUENCE_API void SaveImageSequence(DfscData* vars, const char* pathFormat,
     LPBITMAPINFOHEADER lpbi = NULL;
     int frame = 1;
     do {
-      char filepath[MAX_PATH * 2];
+      wchar_t filepath[MAX_PATH * 2];
       FormatImagePath(pathFormat, filepath, frame);
       WCHAR filepathw[MAX_PATH * 2];
       for (int j = 0; j < 1 || filepath[j - 1] != 0; ++j)
@@ -194,11 +196,11 @@ IMAGESEQUENCE_API void SaveImageSequence(DfscData* vars, const char* pathFormat,
           Bitmap bmp(lpbi->biWidth, lpbi->biHeight, bytesPerLine,
                      PixelFormat24bppRGB, scan0);
           if (bmp.Save(filepathw, &encoderClsid, &saveParams) != Ok) {
-            errMsg = "Unable to save image file. Please check permissions in the destination path.";
+            errMsg = L"Unable to save image file. Please check permissions in the destination path.";
             break;
           }
         } else {
-          errMsg = "Data from signpost AVI is not 24 bit.";
+          errMsg = L"Data from signpost AVI is not 24 bit.";
           break;
         }
       }

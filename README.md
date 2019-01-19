@@ -12,33 +12,33 @@ Frameserver can also export the video from your NLE as an Image sequence. Frames
 
 # Build #
 
-CMake is used to build the Premiere Pro Plug-in.
+Frameserver's build uses CMake, and any recent version of MS Visual Studio.
 
-For any other parts of Frameserver, please use the original SCons build system. Detailed instructions can be found at [the original repo](https://github.com/satishsampath/frame-server/blob/master/README.md).
-
-The following descriptions are for Premiere Pro Plug-in only.
+To build plug-ins for Vegas, EditStudio, MediaStudio, or to build the installer, check out the SCons build guide at [the original repo](https://github.com/satishsampath/frame-server/blob/master/README.md).
 
 ## Requirements to build ##
 
   1. MS Visual Studio (tested with VS2017 and VS2019)
   1. CMake (tested with version 3.13.3, https://cmake.org/)
-  1. You will need the Plug-in SDKs for all the supported host applications. More info about this in the **Host SDKs** section below.
+  1. You will need the Plug-in SDKs for the supported host applications. More info about this in the **Host SDKs** section below.
 
 ## Host SDKs ##
 
 Frameserver works as a plug-in for various video editing 'host' applications and allows exporting the rendered video from them as .avi files. To build the plug-in for each host application, you need to have the host's plug-in SDK. You need to download each plug-in SDK yourself from the host application's website, because their Terms & Conditions do not allow redistributing them with the Frameserver codebase.
 
   * Premiere Pro Plug-in SDK: https://www.adobe.io/apis/creativecloud/premierepro.html
+  * Wax Plug-in SDK: Included in the codebase.
 
 Once downloaded, place the host SDK files in the following hierarchy:
 ```
 src/SDKs
   +-- Premiere
-        +-- Examples
-              +-- Headers
-              +-- Projects
-              +-- Resources
-              +-- Utils
+  |     +-- Examples
+  |           +-- Headers
+  |           +-- Projects
+  |           +-- Resources
+  |           +-- Utils
+  +-- Wax
 ```
 Alternatively, you can manually set CMake option `PREMIERE_INCLUDE_DIRS` to the `Examples/Headers` folder.
 
