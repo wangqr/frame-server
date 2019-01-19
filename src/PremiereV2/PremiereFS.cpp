@@ -37,7 +37,7 @@
 HINSTANCE ghInst;
 
 #define APPNAME L"DebugMode FrameServer"
-#if !defined(WIN64)
+#if !defined(_WIN64)
   // This is defined in the CS5 sdk, so we define the same for CS4 to keep the code simple.
   typedef long csSDK_int32;
   typedef long csSDK_uint32;
@@ -430,7 +430,7 @@ prMALError doBeginInstance(exportStdParms* stdParams, exExporterInstanceRec* rec
   // Initialize the object per c++
   fs = new (fs)PremiereFSImpl(basicSuite);
 
-#if defined(WIN64)
+#if defined(_WIN64)
   rec->privateData = reinterpret_cast<void*>(fs);  // CS5 and above
 #else
   rec->privateData = reinterpret_cast<long>(fs);  // CS4 and below

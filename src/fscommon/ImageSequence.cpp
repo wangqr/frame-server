@@ -23,7 +23,7 @@
 #include <vfw.h>
 #include "ImageSequence.h"
 
-#if !defined(WIN64)
+#if !defined(_WIN64)
 typedef unsigned long ULONG_PTR;
 #endif
 
