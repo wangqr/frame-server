@@ -102,8 +102,8 @@ int APIENTRY WinMain(HINSTANCE hInstance,
   }
 
   DWORD stream = 0;
-  wchar_t str[64] = L"DfscData";
-  swprintf(str + wcslen(str), L"%lu");
+  wchar_t str[64];
+  swprintf(str, 64, L"DfscData%lu", stream);
   varFile = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, sizeof(DfscData), str);
   if (GetLastError() != ERROR_ALREADY_EXISTS) {
     CloseHandle(varFile);
@@ -179,8 +179,8 @@ int APIENTRY WinMain(HINSTANCE hInstance,
           if (rval == SOCKET_ERROR) closeconn = true;
           if (!closeconn && rval > 0) {
 #ifdef _DEBUG
-            char str[32];
-            sprintf(str, "v1 %f - ", (float)timeGetTime() / 1000.0f);
+            wchar_t str[32];
+            swprintf(str, 32, L"v1 %f - ", (float)timeGetTime() / 1000.0f);
             OutputDebugString(str);
 #endif
             closeconn = ((rval = SocketReadBlock(sockClient[s], (char*)&frameIndex, sizeof(frameIndex))) == 0);
@@ -236,7 +236,7 @@ int APIENTRY WinMain(HINSTANCE hInstance,
                 delete[] ptr;
             }
 #ifdef _DEBUG
-            sprintf(str, "v2 %f\n", (float)timeGetTime() / 1000.0f);
+            swprintf(str, 32, L"v2 %f\n", (float)timeGetTime() / 1000.0f);
             OutputDebugString(str);
 #endif
           }

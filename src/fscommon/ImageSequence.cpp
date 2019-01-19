@@ -20,6 +20,7 @@
  */
 
 #include <windows.h>
+#include <stdio.h>
 #include <vfw.h>
 #include "ImageSequence.h"
 
@@ -45,7 +46,7 @@ void FormatImagePath(const char* format, wchar_t* wpath, int num) {
     while (path[numpos + numsize] == '#')
       numsize++;
     char strnum[12];
-    itoa(num, strnum, 10);
+    sprintf(strnum, "%d", num);
     int numzeroes = max(numsize - strlen(strnum), 0);
     path[numpos] = 0;
     while (numzeroes-- > 0)

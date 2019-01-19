@@ -372,9 +372,9 @@ int APIENTRY WinMain(HINSTANCE hInstance,
     DWORD curtime = timeGetTime();
     DWORD msec = curtime - lasttime;
     if (msec >= 1000) {
-      swprintf(str, L"%.2lf frames/sec", ((double)framesread * 1000) / msec);
+      swprintf(str, 64, L"%.2lf frames/sec", ((double)framesread * 1000) / msec);
       SetDlgItemText(servingdlg, IDC_VIDEOSTATS, str);
-      swprintf(str, L"%.2lf samples/sec", ((double)samplesread * 1000) / msec);
+      swprintf(str, 64, L"%.2lf samples/sec", ((double)samplesread * 1000) / msec);
       SetDlgItemText(servingdlg, IDC_AUDIOSTATS, str);
       framesread = 0;
       samplesread = 0;
@@ -399,10 +399,8 @@ int APIENTRY WinMain(HINSTANCE hInstance,
     if (WaitForSingleObject(videoEncEvent, 0) == WAIT_OBJECT_0) {
       // OutputDebugString("0\n");
 #ifdef _DEBUG
-      char str[32]; strcpy(str, "nc> video - ");
-      itoa(vars->videoFrameIndex, str + strlen(str), 10);
-      strcat(str, "\n");
-      sprintf(str, "c1 %f - ", (float)timeGetTime() / 1000.0f);
+      wchar_t str[32];
+      swprintf(str, 32, L"c1 %f - ", (float)timeGetTime() / 1000.0f);
       OutputDebugString(str);
 #endif
       ResetEvent(videoEncEvent);
@@ -410,7 +408,7 @@ int APIENTRY WinMain(HINSTANCE hInstance,
       SocketReadVars(sock, &readAudio, sizeof(readAudio), &frameIndex, sizeof(frameIndex), &size, sizeof(size), 0);
       if (readAudio || frameIndex != vars->videoFrameIndex) {
 #ifdef _DEBUG
-        OutputDebugString("getting diff frame ");
+        OutputDebugString(L"getting diff frame ");
 #endif
         BYTE* data = new BYTE[size];
         SocketReadBlock(sock, data, size);
@@ -423,7 +421,7 @@ int APIENTRY WinMain(HINSTANCE hInstance,
       }
 
 #ifdef _DEBUG
-      sprintf(str, "c2 %f\n", (float)timeGetTime() / 1000.0f);
+      swprintf(str, 32, L"c2 %f\n", (float)timeGetTime() / 1000.0f);
       OutputDebugString(str);
 #endif
       frameIndex++;
@@ -440,9 +438,8 @@ int APIENTRY WinMain(HINSTANCE hInstance,
     }
     if (WaitForSingleObject(audioEncEvent, 0) == WAIT_OBJECT_0) {
 #ifdef _DEBUG
-      char str[32]; strcpy(str, "nc> audio - ");
-      itoa(vars->audioFrameIndex, str + strlen(str), 10);
-      strcat(str, "\n");
+      wchar_t str[32];
+      swprintf(str, 32, L"nc> audio - %d\n", vars->audioFrameIndex);
       OutputDebugString(str);
 #endif
       ResetEvent(audioEncEvent);
@@ -491,8 +488,8 @@ int APIENTRY WinMain(HINSTANCE hInstance,
       }
     } else {
 #ifdef _DEBUG
-      char str[32];
-      sprintf(str, "%f, %f\n", (float)(timeGetTime() - sttime) / 1000.0f, (firsttm - sttime) / 1000.0f);
+      wchar_t str[32];
+      swprintf(str, 32, L"%f, %f\n", (float)(timeGetTime() - sttime) / 1000.0f, (firsttm - sttime) / 1000.0f);
       OutputDebugString(str);
 #endif
     }

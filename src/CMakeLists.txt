@@ -4,7 +4,7 @@ project(frame-server)
 add_compile_definitions(_UNICODE UNICODE)
 
 add_library(ImageSequence SHARED fscommon/ImageSequence.cpp)
-add_compile_definitions(ImageSequence PRIVATE IMAGESEQUENCE_EXPORTS)
+target_compile_definitions(ImageSequence PRIVATE IMAGESEQUENCE_EXPORTS)
 target_link_libraries(ImageSequence Gdiplus Vfw32)
 
 add_library(fscommon SHARED fscommon/fscommon.rc)
@@ -24,7 +24,7 @@ target_link_libraries(DFsNetClient Rpcrt4 Wininet Winmm Ws2_32)
 
 add_executable(DFsNetServer WIN32 NetServer/NetServer.cpp)
 target_include_directories(DFsNetServer PRIVATE fscommon dfsc utils)
-target_link_libraries(DFsNetServer Rpcrt4 Wininet Ws2_32)
+target_link_libraries(DFsNetServer Rpcrt4 Wininet Winmm Ws2_32)
 
 set(PREMIERE_INCLUDE_DIRS sdks/Premiere/Examples/Headers CACHE PATH "Path to Premiere SDK Examples directory")
 if(NOT EXISTS "${PREMIERE_INCLUDE_DIRS}/PrSDKExport.h")
